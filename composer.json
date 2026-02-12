@@ -1,0 +1,79 @@
+{
+    "name": "centivadev/filament-google-workspace-auth",
+    "description": "Google Workspace auth for Filament users",
+    "keywords": [
+        "centivadev",
+        "laravel",
+        "filament",
+        "filament-google-workspace-auth"
+    ],
+    "homepage": "https://github.com/centivadev/filament-google-workspace-auth",
+    "support": {
+        "issues": "https://github.com/centivadev/filament-google-workspace-auth/issues",
+        "source": "https://github.com/centivadev/filament-google-workspace-auth"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Centiva Dev",
+            "email": "devops@centiva.ca",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0 || ^5.0",
+        "firebase/php-jwt": "^6.10",
+        "spatie/laravel-permission": "^6.0",
+        "spatie/laravel-package-tools": "^1.15.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.0",
+        "nunomaduro/collision": "^8.0",
+        "nunomaduro/larastan": "^2.0.1",
+        "orchestra/testbench": "^9.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-arch": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "phpstan/extension-installer": "^1.1",
+        "phpstan/phpstan-deprecation-rules": "^1.0",
+        "phpstan/phpstan-phpunit": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CentivaDev\\FilamentGoogleWorkspaceAuth\\": "src/",
+            "CentivaDev\\FilamentGoogleWorkspaceAuth\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CentivaDev\\FilamentGoogleWorkspaceAuth\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "CentivaDev\\FilamentGoogleWorkspaceAuth\\FilamentGoogleWorkspaceAuthServiceProvider"
+            ],
+            "aliases": {
+                "FilamentGoogleWorkspaceAuth": "CentivaDev\\FilamentGoogleWorkspaceAuth\\Facades\\FilamentGoogleWorkspaceAuth"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
