@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Config;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
+use Spatie\Permission\PermissionServiceProvider as SpatiePermissionServiceProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -55,6 +56,7 @@ class TestCase extends Orchestra
             SupportServiceProvider::class,
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
+            SpatiePermissionServiceProvider::class,
             FilamentGoogleWorkspaceAuthServiceProvider::class,
         ];
     }

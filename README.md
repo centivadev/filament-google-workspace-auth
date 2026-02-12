@@ -162,3 +162,5 @@ Authorization:
 ```bash
 composer test
 ```
+
+Tests are fully offline: Google endpoints are mocked, no real credentials are required.

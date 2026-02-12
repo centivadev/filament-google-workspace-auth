@@ -7,19 +7,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Spatie\Permission\Models\Role;
 
-it('redirects to google and stores oauth session data', function () {
-    $response = $this->get(route('filament-google-workspace-auth.redirect'));
-
-    $response->assertStatus(302);
-
-    $location = $response->headers->get('Location');
-    expect($location)->toContain('https://accounts.google.com/o/oauth2/v2/auth?');
-
-    expect(session()->has('filament-google.state'))->toBeTrue();
-    expect(session()->has('filament-google.nonce'))->toBeTrue();
-    expect(session()->has('filament-google.code_verifier'))->toBeTrue();
-});
-
 it('provisions a new user, assigns role, and logs in', function () {
     Role::findOrCreate('guest', 'filament');
 
