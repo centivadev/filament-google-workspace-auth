@@ -103,5 +103,6 @@ class TestCase extends Orchestra
             'key' => 'spatie.permission.cache',
             'store' => 'array',
         ]);
+        Config::set('permission.default_guard_name', 'filament');
     }
 }

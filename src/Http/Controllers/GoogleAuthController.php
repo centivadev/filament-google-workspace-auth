@@ -3,7 +3,6 @@
 namespace CentivaDev\FilamentGoogleWorkspaceAuth\Http\Controllers;
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Services\GoogleOidcService;
-use CentivaDev\FilamentGoogleWorkspaceAuth\Support\RoleSetup;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -131,8 +130,6 @@ class GoogleAuthController
         }
 
         $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
-
-        RoleSetup::ensureBaseRoles($guard);
 
         $superAdmins = config('filament-google-workspace-auth.super_admin_emails', []);
         if (is_array($superAdmins) && in_array($email, $superAdmins, true)) {

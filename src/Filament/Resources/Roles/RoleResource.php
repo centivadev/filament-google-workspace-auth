@@ -2,6 +2,7 @@
 
 namespace CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Roles;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -15,6 +16,8 @@ use Spatie\Permission\Models\Role;
 
 class RoleResource extends Resource
 {
+    protected const PROTECTED_ROLE_NAMES = ['super-admin', 'guest'];
+
     protected static ?string $model = Role::class;
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-shield-check';
@@ -22,13 +25,6 @@ class RoleResource extends Resource
     public static function getNavigationGroup(): ?string
     {
         return (string) (config('filament-google-workspace-auth.resources.navigation_group') ?? 'System');
-    }
-
-    public static function canViewAny(): bool
-    {
-        $user = auth()->user();
-
-        return $user && method_exists($user, 'hasRole') && $user->hasRole('super-admin');
     }
 
     public static function getEloquentQuery(): Builder
@@ -47,10 +43,22 @@ class RoleResource extends Resource
                         TextInput::make('name')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.roles.fields.name'))
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->disabled(fn (?Role $record) => $record && static::isProtectedRole($record))
+                            ->unique(
+                                ignoreRecord: true,
+                                modifyRuleUsing: function ($rule) {
+                                    $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
+
+                                    return $rule->where('guard_name', $guard);
+                                }
+                            ),
                         Select::make('permissions')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.roles.fields.permissions'))
                             ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->optionsLimit(5)
                             ->relationship('permissions', 'name'),
                     ]),
             ]);
@@ -70,6 +78,8 @@ class RoleResource extends Resource
             ])
             ->actions([
                 EditAction::make(),
+                DeleteAction::make()
+                    ->visible(fn (Role $record) => ! static::isProtectedRole($record)),
             ]);
     }
 
@@ -87,5 +97,10 @@ class RoleResource extends Resource
             'edit' => Pages\EditRole::route('/{record}/edit'),
             'create' => Pages\CreateRole::route('/create'),
         ];
+    }
+
+    public static function isProtectedRole(Role $role): bool
+    {
+        return in_array($role->name, static::PROTECTED_ROLE_NAMES, true);
     }
 }

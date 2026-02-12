@@ -1,0 +1,62 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
+
+        $superAdmin = Role::findOrCreate('super-admin', $guard);
+        Role::findOrCreate('guest', $guard);
+
+        foreach ($this->basePermissions() as $permission) {
+            Permission::findOrCreate($permission, $guard);
+        }
+
+        $permissions = Permission::query()
+            ->where('guard_name', $guard)
+            ->get();
+
+        if ($permissions->isNotEmpty()) {
+            $superAdmin->syncPermissions($permissions);
+        }
+    }
+
+    public function down(): void
+    {
+        $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
+
+        Permission::query()
+            ->where('guard_name', $guard)
+            ->whereIn('name', $this->basePermissions())
+            ->delete();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function basePermissions(): array
+    {
+        return [
+            'filament.users.view_any',
+            'filament.users.view',
+            'filament.users.create',
+            'filament.users.update',
+            'filament.users.delete',
+            'filament.roles.view_any',
+            'filament.roles.view',
+            'filament.roles.create',
+            'filament.roles.update',
+            'filament.roles.delete',
+            'filament.permissions.view_any',
+            'filament.permissions.view',
+            'filament.permissions.create',
+            'filament.permissions.update',
+            'filament.permissions.delete',
+        ];
+    }
+};

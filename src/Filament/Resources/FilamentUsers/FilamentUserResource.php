@@ -28,13 +28,6 @@ class FilamentUserResource extends Resource
         return (string) (config('filament-google-workspace-auth.resources.navigation_group') ?? 'System');
     }
 
-    public static function canViewAny(): bool
-    {
-        $user = auth()->user();
-
-        return $user && method_exists($user, 'hasRole') && $user->hasRole('super-admin');
-    }
-
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->latest('last_login_at');
@@ -69,10 +62,16 @@ class FilamentUserResource extends Resource
                         Select::make('roles')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.roles'))
                             ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->optionsLimit(5)
                             ->relationship('roles', 'name'),
                         Select::make('permissions')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.permissions'))
                             ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->optionsLimit(5)
                             ->relationship('permissions', 'name'),
                         DateTimePicker::make('banned_at')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.banned_at'))

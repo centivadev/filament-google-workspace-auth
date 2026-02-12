@@ -2,6 +2,7 @@
 
 namespace CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Permissions;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -23,13 +24,6 @@ class PermissionResource extends Resource
         return (string) (config('filament-google-workspace-auth.resources.navigation_group') ?? 'System');
     }
 
-    public static function canViewAny(): bool
-    {
-        $user = auth()->user();
-
-        return $user && method_exists($user, 'hasRole') && $user->hasRole('super-admin');
-    }
-
     public static function getEloquentQuery(): Builder
     {
         $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
@@ -46,7 +40,15 @@ class PermissionResource extends Resource
                         TextInput::make('name')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.permissions.fields.name'))
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->unique(
+                                ignoreRecord: true,
+                                modifyRuleUsing: function ($rule) {
+                                    $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
+
+                                    return $rule->where('guard_name', $guard);
+                                }
+                            ),
                     ]),
             ]);
     }
@@ -62,6 +64,7 @@ class PermissionResource extends Resource
             ])
             ->actions([
                 EditAction::make(),
+                DeleteAction::make(),
             ]);
     }
 

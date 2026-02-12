@@ -7,8 +7,9 @@ Google Workspace (OIDC) authentication for Filament v4/v5 using a dedicated `Fil
 - 100% Google login (no username/password)
 - Workspace domain restriction (`hd` + email domain)
 - Automatic user provisioning with avatar + last login timestamp
-- Default roles: `super-admin`, `admin`, `guest`
-- Filament resources to manage users/roles/permissions
+- Default role assignment on first login (configurable)
+- Filament resources to manage users/roles/permissions (with protected roles)
+- Policies + permissions-based authorization (Laravel Gate)
 - Separate guard and model to avoid conflicts with a future `User` model
 
 ## Requirements
@@ -135,6 +136,20 @@ The plugin registers three resources (configurable):
 - Permissions
 
 They are grouped under the navigation group configured in `resources.navigation_group`.
+
+Protected roles:
+- `super-admin` and `guest` cannot be deleted
+- The `name` of those roles is not editable
+
+Base permissions:
+- The package ships a migration stub `add_base_permissions.php.stub` that seeds default Filament permissions.
+- It also creates the `super-admin` + `guest` roles if missing.
+- It assigns **all permissions for the guard** to `super-admin`.
+  Publish and run the package migrations to create them.
+
+Authorization:
+- Policies are registered for roles, permissions, and Filament users.
+- Gate checks rely on Spatie permissions like `filament.users.*`, `filament.roles.*`, `filament.permissions.*`.
 
 ## Notes
 

@@ -5,6 +5,7 @@ use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\FilamentUser;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Spatie\Permission\Models\Role;
 
 it('redirects to google and stores oauth session data', function () {
     $response = $this->get(route('filament-google-workspace-auth.redirect'));
@@ -20,6 +21,8 @@ it('redirects to google and stores oauth session data', function () {
 });
 
 it('provisions a new user, assigns role, and logs in', function () {
+    Role::findOrCreate('guest', 'filament');
+
     $mock = \Mockery::mock(GoogleOidcService::class);
     $mock->shouldReceive('exchangeCodeForTokens')
         ->once()
