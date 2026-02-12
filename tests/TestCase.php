@@ -17,10 +17,10 @@ use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Config;
 use Livewire\LivewireServiceProvider;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Orchestra\Testbench\TestCase as Orchestra;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class TestCase extends Orchestra
 {

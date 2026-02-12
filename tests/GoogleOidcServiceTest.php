@@ -3,7 +3,7 @@
 use CentivaDev\FilamentGoogleWorkspaceAuth\Services\GoogleOidcService;
 
 it('builds an authorization url with hosted domain', function () {
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
 
     $url = $service->buildAuthorizationUrl('state-123', 'nonce-456', 'challenge-789');
 
@@ -24,7 +24,7 @@ it('builds an authorization url with hosted domain', function () {
 });
 
 it('generates a stable code challenge', function () {
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
 
     $verifier = 'test-verifier';
     $expected = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
