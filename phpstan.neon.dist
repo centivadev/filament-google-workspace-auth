@@ -1,6 +1,5 @@
 includes:
     - vendor/nunomaduro/larastan/extension.neon
-    - vendor/phpstan/extension-installer/src/Stub.php
 
 parameters:
     paths:

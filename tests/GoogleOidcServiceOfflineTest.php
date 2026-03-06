@@ -9,7 +9,7 @@ it('builds the authorization url with hosted domain', function () {
     Config::set('filament-google-workspace-auth.redirect_uri', 'https://example.test/callback');
     Config::set('filament-google-workspace-auth.hosted_domain', 'example.com');
 
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
 
     $url = $service->buildAuthorizationUrl('state-123', 'nonce-123', 'challenge-123');
     $parts = parse_url($url);
@@ -31,7 +31,7 @@ it('throws when client id is missing', function () {
     Config::set('filament-google-workspace-auth.client_id', '');
     Config::set('filament-google-workspace-auth.redirect_uri', 'https://example.test/callback');
 
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
 
     $call = fn () => $service->buildAuthorizationUrl('state', 'nonce', 'challenge');
 
@@ -47,7 +47,7 @@ it('exchanges code for tokens using http fake', function () {
         'https://oauth2.googleapis.com/token' => Http::response(['id_token' => 'token'], 200),
     ]);
 
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
     $tokens = $service->exchangeCodeForTokens('code', 'verifier');
 
     expect($tokens['id_token'] ?? null)->toBe('token');
@@ -62,7 +62,7 @@ it('throws when token exchange fails', function () {
         'https://oauth2.googleapis.com/token' => Http::response(['error' => 'invalid'], 400),
     ]);
 
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
 
     $call = fn () => $service->exchangeCodeForTokens('code', 'verifier');
 
@@ -70,7 +70,7 @@ it('throws when token exchange fails', function () {
 });
 
 it('generates a stable code challenge for a known verifier', function () {
-    $service = new GoogleOidcService();
+    $service = new GoogleOidcService;
     $challenge = $service->generateCodeChallenge('abc');
 
     expect($challenge)->toBe('ungWv48Bz-pBQUDeXa4iI7ADYaOWF3qctBD_YfIAFa0');
