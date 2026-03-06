@@ -1,0 +1,9 @@
+parameters:
+    paths:
+        - src
+
+    level: 3
+
+    ignoreErrors:
+        - '#Call to deprecated method actions\(\) of class Filament\\Tables\\Table#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::assignRole\(\)#'

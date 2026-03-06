@@ -139,7 +139,15 @@ class GoogleAuthController
             $user->assignRole(Role::findByName($defaultRole, $guard));
         }
 
-        Auth::guard($guard)->login($user, true);
+        $remember = (bool) config('filament-google-workspace-auth.remember', false);
+        Auth::guard($guard)->login($user, $remember);
+
+        $accessToken = (string) ($tokens['access_token'] ?? '');
+        $expiresIn = (int) ($tokens['expires_in'] ?? 3600);
+
+        $request->session()->put('filament-google.authenticated_at', time());
+        $request->session()->put('filament-google.access_token', $accessToken);
+        $request->session()->put('filament-google.access_token_expires_at', time() + $expiresIn);
 
         return redirect()->intended(Filament::getUrl());
     }
