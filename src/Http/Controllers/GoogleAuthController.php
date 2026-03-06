@@ -148,7 +148,6 @@ class GoogleAuthController
         $request->session()->put('filament-google.authenticated_at', time());
         $request->session()->put('filament-google.access_token', $accessToken);
         $request->session()->put('filament-google.access_token_expires_at', time() + $expiresIn);
-        $request->session()->put('filament-google.last_userinfo_check', time());
 
         return redirect()->intended(Filament::getUrl());
     }

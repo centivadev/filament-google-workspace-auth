@@ -74,7 +74,7 @@ class CheckGoogleSessionLifetime
                 ->timeout(5)
                 ->get('https://openidconnect.googleapis.com/v1/userinfo');
 
-            if ($response->status() === 401) {
+            if (in_array($response->status(), [401, 403], true)) {
                 return false;
             }
         } catch (\Throwable) {
