@@ -28,6 +28,20 @@ return [
     // If true, new users are created automatically on first login.
     'auto_provision' => env('FILAMENT_GOOGLE_AUTO_PROVISION', true),
 
+    // If true, a "remember me" cookie is issued on login (persists across browser restarts).
+    // Recommended: false. When false, the session ends when the browser is closed.
+    'remember' => env('FILAMENT_GOOGLE_REMEMBER', false),
+
+    // Absolute session lifetime in minutes. The user is logged out and forced to re-authenticate
+    // with Google after this delay, regardless of activity. Set to null to disable.
+    'session_lifetime' => env('FILAMENT_GOOGLE_SESSION_LIFETIME'),
+
+    // How often (in minutes) to verify the user's Google account is still active via the
+    // OpenID Connect UserInfo endpoint. Enables near-real-time detection of deleted or
+    // suspended Google Workspace accounts. Set to null to disable.
+    // Only effective while the Google access token is valid (first 60 minutes after login).
+    'userinfo_check_interval' => env('FILAMENT_GOOGLE_USERINFO_CHECK_INTERVAL', 60),
+
     // Resource registration (users/roles/permissions) inside Filament.
     'resources' => [
         'users' => true,
