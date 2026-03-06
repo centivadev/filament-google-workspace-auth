@@ -2,6 +2,11 @@ name: "Fix PHP Code Styling"
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - '**.php'
+  pull_request:
     paths:
       - '**.php'
 
@@ -27,10 +32,18 @@ jobs:
       - name: Install composer dependencies
         uses: ramsey/composer-install@v3
 
-      - name: Fix PHP code style issues
+      - name: Fix PHP code style issues (main only)
+        if: github.ref == 'refs/heads/main'
         uses: aglipanci/laravel-pint-action@2.6
 
-      - name: Commit changes
+      - name: Commit changes (main only)
+        if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Fix styling
+
+      - name: Check PHP code style (PRs)
+        if: github.event_name == 'pull_request'
+        uses: aglipanci/laravel-pint-action@2.6
+        with:
+          testMode: true
