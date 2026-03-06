@@ -42,7 +42,7 @@ class CheckGoogleSessionLifetime
             return false;
         }
 
-        return time() > ($authenticatedAt + ((int) $lifetime * 60));
+        return time() > ((int) $authenticatedAt + ((int) $lifetime * 60));
     }
 
     private function shouldCheckUserInfo(Request $request): bool
@@ -60,7 +60,7 @@ class CheckGoogleSessionLifetime
             return false;
         }
 
-        $lastCheck = $request->session()->get('filament-google.last_userinfo_check', 0);
+        $lastCheck = (int) $request->session()->get('filament-google.last_userinfo_check', 0);
 
         return time() >= ($lastCheck + ((int) $interval * 60));
     }
