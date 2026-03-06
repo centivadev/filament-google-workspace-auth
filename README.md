@@ -11,6 +11,7 @@ Google Workspace (OIDC) authentication for Filament v4/v5 using a dedicated `Fil
 - Filament resources to manage users/roles/permissions (with protected roles)
 - Policies + permissions-based authorization (Laravel Gate)
 - Separate guard and model to avoid conflicts with a future `User` model
+- Session validity management: absolute timeout + near-real-time Google account revocation detection
 
 ## Requirements
 
@@ -150,6 +151,60 @@ Base permissions:
 Authorization:
 - Policies are registered for roles, permissions, and Filament users.
 - Gate checks rely on Spatie permissions like `filament.users.*`, `filament.roles.*`, `filament.permissions.*`.
+
+## Session Validity
+
+The package provides two independent mechanisms to ensure sessions stay in sync with Google Workspace.
+
+### Remember me
+
+Controls whether a persistent cookie is issued after login. When `false` (default), the session ends when the browser is closed.
+
+```dotenv
+FILAMENT_GOOGLE_REMEMBER=false
+```
+
+### Absolute session lifetime
+
+Forces the user to re-authenticate with Google after a fixed delay, regardless of activity.
+
+```dotenv
+FILAMENT_GOOGLE_SESSION_LIFETIME=480   # 8 hours, null to disable
+```
+
+This is independent from Laravel's native `SESSION_LIFETIME` (`config/session.php`). Both apply simultaneously — the one that triggers first wins:
+
+| Setting | Type | Resets on activity? |
+|---|---|---|
+| Laravel `SESSION_LIFETIME` | Idle timeout | Yes — extends on every request |
+| `FILAMENT_GOOGLE_SESSION_LIFETIME` | Absolute timeout | No — fixed since login |
+
+**Example:** `SESSION_LIFETIME=120` (2h idle) + `FILAMENT_GOOGLE_SESSION_LIFETIME=480` (8h absolute).
+A user active all day is kicked out after 8 hours. An idle user is kicked out after 2 hours.
+
+> **Important:** When `FILAMENT_GOOGLE_REMEMBER=true`, the remember-me cookie bypasses Laravel's `SESSION_LIFETIME` entirely. In that case, `FILAMENT_GOOGLE_SESSION_LIFETIME` is the only timeout enforced.
+
+### Google account revocation detection
+
+Periodically calls the Google OpenID Connect UserInfo endpoint (`https://openidconnect.googleapis.com/v1/userinfo`) to verify the user's account is still active. If the account has been deleted or suspended in Google Workspace, the user is logged out immediately.
+
+```dotenv
+FILAMENT_GOOGLE_USERINFO_CHECK_INTERVAL=5   # every 5 minutes, null to disable
+```
+
+The check uses the `access_token` stored in the session (valid for 60 minutes after login). After that window, `session_lifetime` acts as the safety net.
+
+**Timeline:**
+
+```
+Login
+  │
+  ├─ 0–60 min ──── UserInfo check every N minutes ──── detection within N minutes
+  │
+  └─ 60 min+ ─────────── session_lifetime only ──────── detection at expiry
+```
+
+> Network errors when calling the UserInfo endpoint are ignored (fail open) to avoid disrupting legitimate users during transient Google outages.
 
 ## Notes
 
