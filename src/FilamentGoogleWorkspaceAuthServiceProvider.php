@@ -6,11 +6,11 @@ use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\FilamentUserPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\PermissionPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\RolePolicy;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class FilamentGoogleWorkspaceAuthServiceProvider extends PackageServiceProvider
 {
@@ -38,7 +38,10 @@ class FilamentGoogleWorkspaceAuthServiceProvider extends PackageServiceProvider
             });
     }
 
-    public function packageRegistered(): void {}
+    public function packageRegistered(): void
+    {
+        //
+    }
 
     public function packageBooted(): void
     {
