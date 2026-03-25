@@ -60,6 +60,7 @@ class GoogleOidcService
     public function verifyIdToken(string $idToken, string $expectedNonce): array
     {
         $keys = $this->getJwkKeySet();
+        JWT::$leeway = 30;
         $decoded = (array) JWT::decode($idToken, $keys);
 
         $audience = $decoded['aud'] ?? null;
