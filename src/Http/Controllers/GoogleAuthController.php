@@ -4,6 +4,8 @@ namespace CentivaDev\FilamentGoogleWorkspaceAuth\Http\Controllers;
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Services\GoogleOidcService;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +41,11 @@ class GoogleAuthController
         $nonce = (string) $request->session()->pull('filament-google.nonce');
         $codeVerifier = (string) $request->session()->pull('filament-google.code_verifier');
 
+        // Required: hash_equals('', '') is true, so absent values would pass the checks below.
+        if ($state === '' || $nonce === '' || $codeVerifier === '') {
+            abort(403, 'Authentication flow was not initiated.');
+        }
+
         if (! hash_equals($state, (string) $request->query('state'))) {
             abort(403, 'Invalid authentication state.');
         }
@@ -66,6 +73,10 @@ class GoogleAuthController
             abort(403, 'Email not verified.');
         }
 
+        if ($sub === '') {
+            abort(403, 'Missing Google subject claim.');
+        }
+
         $expectedDomain = (string) config('filament-google-workspace-auth.hosted_domain');
         if ($expectedDomain !== '') {
             if ($hostedDomain !== '' && $hostedDomain !== $expectedDomain) {
@@ -88,7 +99,7 @@ class GoogleAuthController
             abort(500, 'Invalid user model.');
         }
 
-        /** @var \Illuminate\Database\Eloquent\Model $user */
+        /** @var Model|null $user */
         $user = $userModel::query()
             ->where('google_sub', $sub)
             ->orWhere('email', $email)
@@ -104,30 +115,29 @@ class GoogleAuthController
             $isNew = true;
         }
 
+        // Must run before the record is mutated, so a refused login leaves no trace.
+        if (! $isNew) {
+            $this->denyUnlessAllowedToSignIn($user);
+        }
+
         $user->fill([
             'name' => (string) ($claims['name'] ?? $email),
             'email' => $email,
             'google_sub' => $sub,
-            'avatar_url' => (string) ($claims['picture'] ?? null),
+            'avatar_url' => $claims['picture'] ?? null,
             'last_login_at' => now(),
-            'email_verified_at' => $emailVerified ? now() : null,
+            'email_verified_at' => now(),
         ]);
 
-        if ($isNew && empty($user->password)) {
-            $user->forceFill([
-                'password' => Hash::make(Str::random(64)),
-            ]);
+        if ($isNew) {
+            $user->forceFill(['password' => Hash::make(Str::random(64))]);
         }
 
-        if (property_exists($user, 'is_active')) {
-            $user->setAttribute('is_active', true);
+        if (! $user instanceof Authenticatable || ! method_exists($user, 'assignRole')) {
+            abort(500, 'The configured user model must be authenticatable and use HasRoles.');
         }
 
         $user->save();
-
-        if (! empty($user->banned_at) || (property_exists($user, 'is_active') && ! $user->is_active)) {
-            abort(403, 'User is banned.');
-        }
 
         $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
 
@@ -150,5 +160,20 @@ class GoogleAuthController
         $request->session()->put('filament-google.access_token_expires_at', time() + $expiresIn);
 
         return redirect()->intended(Filament::getUrl());
+    }
+
+    private function denyUnlessAllowedToSignIn(Model $user): void
+    {
+        if (! method_exists($user, 'isBanned') || ! method_exists($user, 'isActive')) {
+            abort(500, 'The configured user model must use HasFilamentGoogleWorkspaceUser.');
+        }
+
+        if ($user->isBanned()) {
+            abort(403, 'User is banned.');
+        }
+
+        if (! $user->isActive()) {
+            abort(403, 'User is not active.');
+        }
     }
 }

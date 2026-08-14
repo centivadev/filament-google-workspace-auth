@@ -3,7 +3,14 @@
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Controllers\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['web'])->group(function () {
+$middleware = ['web'];
+
+$throttle = config('filament-google-workspace-auth.routes.throttle', '30,1');
+if (! empty($throttle)) {
+    $middleware[] = 'throttle:' . $throttle;
+}
+
+Route::middleware($middleware)->group(function () {
     $prefix = trim((string) config('filament-google-workspace-auth.routes.prefix', 'filament/auth/google'), '/');
 
     Route::get($prefix, [GoogleAuthController::class, 'redirect'])

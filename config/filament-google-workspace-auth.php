@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\FilamentUser;
+
 return [
     'client_id' => env('FILAMENT_GOOGLE_CLIENT_ID'),
     'client_secret' => env('FILAMENT_GOOGLE_CLIENT_SECRET'),
@@ -23,7 +25,7 @@ return [
     'guard' => env('FILAMENT_GOOGLE_GUARD', 'filament'),
 
     // Filament user model to use.
-    'user_model' => env('FILAMENT_GOOGLE_USER_MODEL', App\Models\FilamentUser::class),
+    'user_model' => env('FILAMENT_GOOGLE_USER_MODEL', FilamentUser::class),
 
     // If true, new users are created automatically on first login.
     'auto_provision' => env('FILAMENT_GOOGLE_AUTO_PROVISION', true),
@@ -53,5 +55,8 @@ return [
     // Route configuration.
     'routes' => [
         'prefix' => env('FILAMENT_GOOGLE_ROUTE_PREFIX', 'auth/google'),
+
+        // Rate limit on the redirect/callback routes, as "attempts,minutes". Null to disable.
+        'throttle' => env('FILAMENT_GOOGLE_ROUTE_THROTTLE', '30,1'),
     ],
 ];
