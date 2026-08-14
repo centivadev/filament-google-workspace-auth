@@ -59,13 +59,26 @@ class GoogleOidcService
      */
     public function verifyIdToken(string $idToken, string $expectedNonce): array
     {
+        // Required: hash_equals('', '') is true, so an absent nonce would pass the check below.
+        if ($expectedNonce === '') {
+            throw new \RuntimeException('Missing expected token nonce.');
+        }
+
         $keys = $this->getJwkKeySet();
+
+        // Restored so the tolerance does not leak to other JWT consumers of the host app.
+        $previousLeeway = JWT::$leeway;
         JWT::$leeway = 30;
-        $decoded = (array) JWT::decode($idToken, $keys);
+
+        try {
+            $decoded = (array) JWT::decode($idToken, $keys);
+        } finally {
+            JWT::$leeway = $previousLeeway;
+        }
 
         $audience = $decoded['aud'] ?? null;
         $issuer = $decoded['iss'] ?? null;
-        $nonce = $decoded['nonce'] ?? null;
+        $nonce = (string) ($decoded['nonce'] ?? '');
 
         if ($audience !== $this->getClientId()) {
             throw new \RuntimeException('Invalid token audience.');
@@ -75,7 +88,7 @@ class GoogleOidcService
             throw new \RuntimeException('Invalid token issuer.');
         }
 
-        if (! hash_equals((string) $expectedNonce, (string) $nonce)) {
+        if ($nonce === '' || ! hash_equals($expectedNonce, $nonce)) {
             throw new \RuntimeException('Invalid token nonce.');
         }
 

@@ -69,6 +69,21 @@ it('throws when token exchange fails', function () {
     expect($call)->toThrow(RuntimeException::class, 'Google token exchange failed.');
 });
 
+it('refuses to verify an id token when no nonce is expected', function () {
+    // Regression: hash_equals('', '') is true, so an empty expected nonce combined with a
+    // token carrying no nonce claim used to pass verification.
+    Http::fake();
+
+    $service = new GoogleOidcService;
+
+    $call = fn () => $service->verifyIdToken('any.id.token', '');
+
+    expect($call)->toThrow(RuntimeException::class, 'Missing expected token nonce.');
+
+    // The guard must short-circuit before any JWKS traffic.
+    Http::assertNothingSent();
+});
+
 it('generates a stable code challenge for a known verifier', function () {
     $service = new GoogleOidcService;
     $challenge = $service->generateCodeChallenge('abc');
