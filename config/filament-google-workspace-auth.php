@@ -56,7 +56,10 @@ return [
     'routes' => [
         'prefix' => env('FILAMENT_GOOGLE_ROUTE_PREFIX', 'auth/google'),
 
-        // Rate limit on the redirect/callback routes, as "attempts,minutes". Null to disable.
-        'throttle' => env('FILAMENT_GOOGLE_ROUTE_THROTTLE', '30,1'),
+        // Abuse ceiling on the redirect/callback routes, as "attempts,minutes". Null to disable.
+        // Laravel keys this by IP, and a whole Workspace office typically shares one NAT address,
+        // so keep it generous: it is a cap against abuse, not the defence against brute force
+        // (PKCE, state and nonce are). Lower it only if you know your clients are not shared.
+        'throttle' => env('FILAMENT_GOOGLE_ROUTE_THROTTLE', '120,1'),
     ],
 ];

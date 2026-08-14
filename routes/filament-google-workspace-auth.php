@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 $middleware = ['web'];
 
-$throttle = config('filament-google-workspace-auth.routes.throttle', '30,1');
+$throttle = config('filament-google-workspace-auth.routes.throttle', '120,1');
 if (! empty($throttle)) {
     $middleware[] = 'throttle:' . $throttle;
 }
