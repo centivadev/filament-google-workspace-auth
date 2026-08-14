@@ -12,12 +12,19 @@ Google Workspace (OIDC) authentication for Filament v4/v5 using a dedicated `Fil
 - Policies + permissions-based authorization (Laravel Gate)
 - Separate guard and model to avoid conflicts with a future `User` model
 - Session validity management: absolute timeout + near-real-time Google account revocation detection
+- Ban and deactivation gates enforced before the account record is touched
+- Rate-limited auth routes
 
 ## Requirements
 
 - PHP 8.2+
 - Filament v4 or v5
-- Laravel 11/12+
+- Laravel 11/12/13
+- `spatie/laravel-permission` v6, v7 or v8
+
+> **Tested against:** PHP 8.4, Laravel 13, Filament v5 and `spatie/laravel-permission` v8.
+> The lower bounds above are declared but not exercised in CI — the test toolchain (Pest 5)
+> requires PHP 8.4 and Laravel 13. Filament v4 support in particular is unverified.
 
 ## Installation
 
@@ -82,7 +89,14 @@ Remove `->passwordReset()` and `->emailVerification()` from your panel provider 
 
 ## FilamentUser model
 
-Add the required traits and fields:
+Both traits are **required** — login aborts with a 500 if either is missing, rather than
+silently skipping the account-status checks:
+
+- `HasFilamentGoogleWorkspaceUser` provides `isBanned()` and `isActive()`, which gate sign-in
+- `HasRoles` (Spatie) provides `assignRole()`, used for the default and super-admin roles
+
+`is_active` is optional: models without that column are always considered active. It is owned by
+your application, not by this package's migrations, so give it a database default.
 
 ```php
 use CentivaDev\FilamentGoogleWorkspaceAuth\Concerns\HasFilamentGoogleWorkspaceUser;
@@ -99,12 +113,14 @@ class FilamentUser extends Authenticatable implements FilamentUserContract, HasA
         'google_sub',
         'avatar_url',
         'last_login_at',
+        'email_verified_at',
         'banned_at',
         'is_active',
     ];
 
     protected $casts = [
         'last_login_at' => 'datetime',
+        'email_verified_at' => 'datetime',
         'banned_at' => 'datetime',
         'is_active' => 'boolean',
     ];
@@ -127,6 +143,41 @@ Key options:
 - `default_role` to auto-assign `guest`
 - `guard` to match your Filament guard (default: `filament`)
 - `routes.prefix` to align with your Filament path (example: `auth/google` for a root‑domain panel)
+- `routes.throttle` rate limit on the redirect/callback routes, as `"attempts,minutes"` (default: `30,1`, `null` to disable)
+
+## Access control
+
+### How accounts are matched
+
+On callback, an account is looked up by `google_sub` **or** by `email`. The email match is what
+lets you pre-create accounts (or migrate existing ones) and have them adopted by the first Google
+login, which then stores `google_sub` as the permanent identity anchor.
+
+This means **anyone who can authenticate with an email already present in `filament_users` takes
+over that row**. That is safe because the email must be verified by Google and must pass your
+domain/allowlist restrictions — but it does mean those restrictions are what protect the mapping.
+Configure at least one of them.
+
+### Domain restriction
+
+`hosted_domain` is only enforced when it is set. When set, both checks below must pass:
+
+- the `hd` claim must match, when present — personal Gmail accounts carry no `hd`
+- the email must end with `@<hosted_domain>`
+
+The email suffix check is the one that stops personal Gmail accounts, so `hosted_domain` alone is
+sufficient. Leaving it empty means **any** Google account can sign in unless `allowed_emails` is set.
+
+### Account status
+
+For an existing account, sign-in is refused — before the record is written — when `isBanned()` is
+true or `isActive()` is false. Both come from `HasFilamentGoogleWorkspaceUser`: `banned_at` being
+set, and an `is_active` column being falsy.
+
+So banning or deactivating takes effect on the next login attempt, signing in never re-activates a
+deactivated account, and a refused attempt leaves `last_login_at` and the profile fields untouched.
+
+Newly provisioned accounts have no prior status to check; `is_active` takes your column default.
 
 ## Admin UI
 
@@ -209,13 +260,20 @@ Login
 ## Notes
 
 - This package does not use Socialite.
-- All auth is OIDC with PKCE.
+- All auth is OIDC with PKCE (S256), plus `state` and `nonce`. A callback whose session carries
+  none of those values is refused — it never went through `/auth/google`.
+- The redirect and callback routes are rate limited (`routes.throttle`).
 - If you want to disable auto-provisioning, set `FILAMENT_GOOGLE_AUTO_PROVISION=false`.
 
 ## Testing
 
 ```bash
-composer test
+composer test      # Pest
+composer analyse   # PHPStan, level 6 over src and tests
+composer format    # Pint
 ```
 
 Tests are fully offline: Google endpoints are mocked, no real credentials are required.
+
+The dev toolchain (Pest 5, Testbench 11) requires **PHP 8.4 and Laravel 13**, which is narrower
+than what the package itself supports. See the note under [Requirements](#requirements).
