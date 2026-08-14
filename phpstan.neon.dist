@@ -1,9 +1,20 @@
 parameters:
     paths:
         - src
+        - tests
 
-    level: 3
+    level: 6
 
+    # src/ is analysed with no suppressions. These cover two Pest/Mockery idioms in tests/ that
+    # PHPStan cannot model: $this resolves to TestCall inside a Pest closure, and
+    # shouldReceive() is typed as a union that does not declare once().
+    # Unmatched entries are reported as errors, so these cannot rot.
     ignoreErrors:
-        - '#Call to deprecated method actions\(\) of class Filament\\Tables\\Table#'
-        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::assignRole\(\)#'
+        -
+            identifier: method.notFound
+            paths:
+                - tests
+        -
+            identifier: argument.type
+            paths:
+                - tests

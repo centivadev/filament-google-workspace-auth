@@ -109,7 +109,7 @@ class FilamentUserResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 Action::make('ban')
                     ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.actions.ban'))
