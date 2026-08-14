@@ -10,3 +10,17 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
+
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+    # Grouped so routine bumps arrive as two PRs instead of a dozen. Security advisories are
+    # raised separately by Dependabot regardless of grouping.
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      dev-dependencies:
+        dependency-type: "development"

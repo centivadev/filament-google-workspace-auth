@@ -1,0 +1,77 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.php'
+      - '.github/workflows/run-tests.yml'
+      - 'composer.json'
+      - 'phpunit.xml.dist'
+  pull_request:
+    paths:
+      - '**.php'
+      - '.github/workflows/run-tests.yml'
+      - 'composer.json'
+      - 'phpunit.xml.dist'
+
+# The test toolchain pins this matrix, not the package: pest ^5 needs PHP ^8.4 and
+# pest-plugin-laravel ^5 needs Laravel ^13.23. The declared lower bounds (php ^8.2,
+# filament ^4.0) are therefore NOT exercised. Downgrade pest to ^4 to add lower lanes.
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.4'
+            laravel: '13.*'
+            testbench: '11.*'
+
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require \
+            "laravel/framework:${{ matrix.laravel }}" \
+            "orchestra/testbench:${{ matrix.testbench }}" \
+            --dev --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run tests
+        run: vendor/bin/pest
+
+  audit:
+    runs-on: ubuntu-latest
+    name: Security audit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Audit dependencies for known advisories
+        run: composer audit
