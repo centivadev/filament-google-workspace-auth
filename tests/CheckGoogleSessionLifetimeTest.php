@@ -2,6 +2,7 @@
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\CheckGoogleSessionLifetime;
 use Filament\Facades\Filament;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -89,7 +90,7 @@ it('fails open on network errors during userinfo check', function () {
     Config::set('filament-google-workspace-auth.userinfo_check_interval', 5);
 
     Http::fake(function () {
-        throw new \Illuminate\Http\Client\ConnectionException('Network error');
+        throw new ConnectionException('Network error');
     });
 
     $response = $this->withSession([

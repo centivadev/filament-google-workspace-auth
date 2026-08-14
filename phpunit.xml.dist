@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.2/phpunit.xsd"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.3/phpunit.xsd"
     backupGlobals="false"
     bootstrap="vendor/autoload.php"
     colors="true"
@@ -20,16 +20,14 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
-    <coverage>
-        <report>
-            <html outputDirectory="build/coverage"/>
-            <text outputFile="build/coverage.txt"/>
-            <clover outputFile="build/logs/clover.xml"/>
-        </report>
-    </coverage>
     <logging>
         <junit outputFile="build/report.junit.xml"/>
     </logging>
+    <!--
+        Coverage reports are requested on the command line (see the test-coverage script in
+        composer.json) rather than declared here: under PHPUnit 13 a declared <report> makes a
+        missing coverage driver a fatal error instead of a warning.
+    -->
     <source>
         <include>
             <directory suffix=".php">./src</directory>
