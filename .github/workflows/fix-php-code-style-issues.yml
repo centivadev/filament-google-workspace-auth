@@ -1,4 +1,4 @@
-name: "Fix PHP Code Styling"
+name: "Check PHP Code Styling"
 
 on:
   push:
@@ -10,8 +10,11 @@ on:
     paths:
       - '**.php'
 
+# Read-only: this used to run Pint in fix mode on main and push the result back with
+# git-auto-commit-action. That is incompatible with the required status checks now protecting
+# main, so styling is a blocking check and fixes are made in the branch via `composer format`.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   php-code-styling:
@@ -20,8 +23,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -33,18 +34,7 @@ jobs:
       - name: Install composer dependencies
         uses: ramsey/composer-install@v3
 
-      - name: Fix PHP code style issues (main only)
-        if: github.ref == 'refs/heads/main'
-        uses: aglipanci/laravel-pint-action@2.6
-
-      - name: Commit changes (main only)
-        if: github.ref == 'refs/heads/main'
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: Fix styling
-
-      - name: Check PHP code style (PRs)
-        if: github.event_name == 'pull_request'
+      - name: Check PHP code style
         uses: aglipanci/laravel-pint-action@2.6
         with:
           testMode: true

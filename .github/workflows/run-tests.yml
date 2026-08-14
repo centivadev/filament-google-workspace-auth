@@ -75,3 +75,17 @@ jobs:
 
       - name: Audit dependencies for known advisories
         run: composer audit
+
+  # Stable name for branch protection: the matrix job names embed their PHP and Laravel
+  # versions, so requiring them directly would break whenever a lane is added or renamed.
+  tests-passed:
+    runs-on: ubuntu-latest
+    name: Tests passed
+    needs: [test, audit]
+    if: always()
+
+    steps:
+      - name: Verify every required job succeeded
+        run: |
+          [ "${{ needs.test.result }}" = "success" ] || exit 1
+          [ "${{ needs.audit.result }}" = "success" ] || exit 1
