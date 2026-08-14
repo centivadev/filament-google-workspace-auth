@@ -2,7 +2,7 @@
 
 All notable changes to `filament-google-workspace-auth` will be documented in this file.
 
-## Unreleased
+## 1.1.0 - 2026-08-14
 
 Upgrading is drop-in: no configuration changes are required and no public API was removed. The
 behaviour changes worth knowing about are that accounts with a falsy `is_active` can no longer sign
@@ -31,6 +31,10 @@ in — that gate never actually worked before — and that the auth routes are n
 - Tooling modernised to Pest 5 and Testbench 11, which requires PHP 8.4 and Laravel 13 to run the test suite.
 - PHPStan raised from level 3 to level 6 over `src` and `tests`, with no suppressions in `src`.
 - Added a test workflow (there was none), PHPStan on pull requests, a `composer audit` job, and Dependabot coverage for Composer. Dependabot auto-merge narrowed to patch updates.
+
+## 1.0.6 - 2026-06-15
+
+- Simplify the login view button markup
 
 ## 1.0.5 - 2026-03-25
 
