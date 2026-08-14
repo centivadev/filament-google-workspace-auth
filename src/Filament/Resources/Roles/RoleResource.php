@@ -76,13 +76,17 @@ class RoleResource extends Resource
                     ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.roles.fields.permissions'))
                     ->counts('permissions'),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 DeleteAction::make()
                     ->visible(fn (Role $record) => ! static::isProtectedRole($record)),
             ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     public static function mutateFormDataBeforeCreate(array $data): array
     {
         $data['guard_name'] = (string) config('filament-google-workspace-auth.guard', 'filament');

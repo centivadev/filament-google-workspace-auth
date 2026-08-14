@@ -62,12 +62,16 @@ class PermissionResource extends Resource
                     ->searchable()
                     ->sortable(),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
             ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     public static function mutateFormDataBeforeCreate(array $data): array
     {
         $data['guard_name'] = (string) config('filament-google-workspace-auth.guard', 'filament');
