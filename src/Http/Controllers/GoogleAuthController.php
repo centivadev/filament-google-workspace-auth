@@ -162,17 +162,25 @@ class GoogleAuthController
         return redirect()->intended(Filament::getUrl());
     }
 
+    /**
+     * Prefers the HasFilamentGoogleWorkspaceUser helpers so a model may override them, and falls
+     * back to the same rule read straight off the attributes for models predating the trait.
+     */
     private function denyUnlessAllowedToSignIn(Model $user): void
     {
-        if (! method_exists($user, 'isBanned') || ! method_exists($user, 'isActive')) {
-            abort(500, 'The configured user model must use HasFilamentGoogleWorkspaceUser.');
-        }
+        $banned = method_exists($user, 'isBanned')
+            ? $user->isBanned()
+            : ! empty($user->getAttribute('banned_at'));
 
-        if ($user->isBanned()) {
+        if ($banned) {
             abort(403, 'User is banned.');
         }
 
-        if (! $user->isActive()) {
+        $active = method_exists($user, 'isActive')
+            ? $user->isActive()
+            : ! array_key_exists('is_active', $user->getAttributes()) || (bool) $user->getAttribute('is_active');
+
+        if (! $active) {
             abort(403, 'User is not active.');
         }
     }

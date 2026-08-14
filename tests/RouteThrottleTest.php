@@ -9,6 +9,6 @@ it('rate limits the redirect and callback routes', function () {
     expect($routes)->toHaveCount(2);
 
     foreach ($routes as $route) {
-        expect($route->gatherMiddleware())->toContain('web')->toContain('throttle:30,1');
+        expect($route->gatherMiddleware())->toContain('web')->toContain('throttle:120,1');
     }
 });

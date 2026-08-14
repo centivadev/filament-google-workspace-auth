@@ -2,6 +2,7 @@
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Services\GoogleOidcService;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\FilamentUser;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\LegacyFilamentUser;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\TestCase;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
@@ -185,6 +186,57 @@ it('blocks a banned user and leaves the record untouched', function () {
     $user->refresh();
     expect($user->name)->toBe('Banned User');
     expect($user->last_login_at->toDateTimeString())->toBe('2020-01-01 00:00:00');
+});
+
+it('still gates a model that does not use the package trait', function () {
+    // Backwards compatibility: consumers whose model predates HasFilamentGoogleWorkspaceUser
+    // must keep working, and must still be gated on banned_at and is_active.
+    Config::set('filament-google-workspace-auth.user_model', LegacyFilamentUser::class);
+
+    $banned = LegacyFilamentUser::create([
+        'name' => 'Legacy Banned',
+        'email' => 'legacy-banned@example.com',
+        'google_sub' => 'sub-legacy-banned',
+        'last_login_at' => '2020-01-01 00:00:00',
+        'banned_at' => '2021-06-01 00:00:00',
+    ]);
+
+    expect(method_exists($banned, 'isBanned'))->toBeFalse();
+
+    attemptGoogleLogin($this, 'legacy-banned@example.com', 'sub-legacy-banned', 'nonce-lb')
+        ->assertStatus(403);
+
+    expect($banned->refresh()->last_login_at->toDateTimeString())->toBe('2020-01-01 00:00:00');
+
+    $inactive = LegacyFilamentUser::create([
+        'name' => 'Legacy Inactive',
+        'email' => 'legacy-inactive@example.com',
+        'google_sub' => 'sub-legacy-inactive',
+        'is_active' => false,
+    ]);
+
+    attemptGoogleLogin($this, 'legacy-inactive@example.com', 'sub-legacy-inactive', 'nonce-li')
+        ->assertStatus(403);
+
+    expect($inactive->refresh()->is_active)->toBeFalse();
+    expect(Auth::guard('filament')->check())->toBeFalse();
+});
+
+it('signs in a model that does not use the package trait when nothing blocks it', function () {
+    Config::set('filament-google-workspace-auth.user_model', LegacyFilamentUser::class);
+    Role::findOrCreate('guest', 'filament');
+    Filament::shouldReceive('getUrl')->andReturn('/admin');
+
+    LegacyFilamentUser::create([
+        'name' => 'Legacy Fine',
+        'email' => 'legacy-fine@example.com',
+        'google_sub' => 'sub-legacy-fine',
+    ]);
+
+    attemptGoogleLogin($this, 'legacy-fine@example.com', 'sub-legacy-fine', 'nonce-lf')
+        ->assertRedirect('/admin');
+
+    expect(Auth::guard('filament')->check())->toBeTrue();
 });
 
 it('blocks users not in the allowlist', function () {

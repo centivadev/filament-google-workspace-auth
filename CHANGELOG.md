@@ -4,19 +4,23 @@ All notable changes to `filament-google-workspace-auth` will be documented in th
 
 ## Unreleased
 
+Upgrading is drop-in: no configuration changes are required and no public API was removed. The
+behaviour changes worth knowing about are that accounts with a falsy `is_active` can no longer sign
+in — that gate never actually worked before — and that the auth routes are now rate limited.
+
 ### Security
 
 - Reject callbacks with an absent `state`, `nonce` or `code_verifier`. `hash_equals('', '')` returns `true`, so a session that carried none of these values passed the CSRF and replay checks — a callback could be accepted without the flow ever having gone through `/auth/google`.
 - Enforce the `is_active` gate. It was guarded by `property_exists()`, which is always `false` for Eloquent column values, so deactivated users could still sign in and the account was silently re-activated on every login. Only `banned_at` was actually enforced.
 - Refuse banned and deactivated accounts **before** the record is written, so a rejected login no longer refreshes `last_login_at`, `name` or `avatar_url`.
 - Reject ID tokens with no `sub` claim instead of storing an empty `google_sub`, which could match an unrelated account on a later lookup.
-- Rate limit the redirect and callback routes (`routes.throttle`, default `30,1`).
+- Rate limit the redirect and callback routes (`routes.throttle`, default `120,1`). Deliberately generous: Laravel keys the limiter by IP and a whole Workspace office usually shares one NAT address, so this is an abuse ceiling rather than the brute-force defence.
 - Restore `JWT::$leeway` after verification instead of leaking the 30s tolerance to every other JWT consumer in the host application.
 
 ### Changed
 
-- **Breaking:** the user model must use `HasFilamentGoogleWorkspaceUser` and `HasRoles`; a misconfigured model now fails loudly instead of skipping the account-status checks. Both traits were already documented as required.
 - `spatie/laravel-permission` now allows v7 and v8 (was v6 only), unblocking installs on projects already on those majors.
+- A model missing `HasRoles` now aborts with an explanatory 500 instead of a bare `BadMethodCallException`.
 - `avatar_url` stores `null` rather than `''` when Google sends no picture.
 - Replaced the deprecated `Table::actions()` with `recordActions()`.
 

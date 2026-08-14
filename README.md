@@ -89,11 +89,11 @@ Remove `->passwordReset()` and `->emailVerification()` from your panel provider 
 
 ## FilamentUser model
 
-Both traits are **required** — login aborts with a 500 if either is missing, rather than
-silently skipping the account-status checks:
-
-- `HasFilamentGoogleWorkspaceUser` provides `isBanned()` and `isActive()`, which gate sign-in
-- `HasRoles` (Spatie) provides `assignRole()`, used for the default and super-admin roles
+- `HasRoles` (Spatie) is required — it provides `assignRole()`, used for the default and
+  super-admin roles.
+- `HasFilamentGoogleWorkspaceUser` is recommended. It provides `isBanned()` and `isActive()`,
+  which gate sign-in. A model without it still works and is still gated: the same rule is read
+  straight off `banned_at` and `is_active`. Override either method to customise the rule.
 
 `is_active` is optional: models without that column are always considered active. It is owned by
 your application, not by this package's migrations, so give it a database default.
@@ -143,7 +143,7 @@ Key options:
 - `default_role` to auto-assign `guest`
 - `guard` to match your Filament guard (default: `filament`)
 - `routes.prefix` to align with your Filament path (example: `auth/google` for a root‑domain panel)
-- `routes.throttle` rate limit on the redirect/callback routes, as `"attempts,minutes"` (default: `30,1`, `null` to disable)
+- `routes.throttle` abuse ceiling on the redirect/callback routes, as `"attempts,minutes"` (default: `120,1`, `null` to disable). Laravel keys this by IP and a whole Workspace office usually shares one NAT address, so keep it generous — the brute-force defence is PKCE/state/nonce, not this.
 
 ## Access control
 
@@ -170,9 +170,9 @@ sufficient. Leaving it empty means **any** Google account can sign in unless `al
 
 ### Account status
 
-For an existing account, sign-in is refused — before the record is written — when `isBanned()` is
-true or `isActive()` is false. Both come from `HasFilamentGoogleWorkspaceUser`: `banned_at` being
-set, and an `is_active` column being falsy.
+For an existing account, sign-in is refused — before the record is written — when `banned_at` is
+set or an `is_active` column is falsy. This resolves through `isBanned()` / `isActive()` when the
+model uses `HasFilamentGoogleWorkspaceUser`, and off the attributes otherwise.
 
 So banning or deactivating takes effect on the next login attempt, signing in never re-activates a
 deactivated account, and a refused attempt leaves `last_login_at` and the profile fields untouched.
