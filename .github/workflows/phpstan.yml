@@ -1,14 +1,13 @@
 name: PHPStan
 
+# No paths filter: these jobs are required status checks on main, and a filtered workflow
+# simply never reports on a PR that does not touch the filtered paths, leaving the check
+# permanently pending and the PR unmergeable. Running them on every PR is the cheap fix.
 on:
   push:
-    paths:
-      - '**.php'
-      - 'phpstan.neon.dist'
+    branches:
+      - main
   pull_request:
-    paths:
-      - '**.php'
-      - 'phpstan.neon.dist'
 
 jobs:
   phpstan:
