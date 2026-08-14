@@ -1,14 +1,13 @@
 name: "Check PHP Code Styling"
 
+# No paths filter: these jobs are required status checks on main, and a filtered workflow
+# simply never reports on a PR that does not touch the filtered paths, leaving the check
+# permanently pending and the PR unmergeable. Running them on every PR is the cheap fix.
 on:
   push:
     branches:
       - main
-    paths:
-      - '**.php'
   pull_request:
-    paths:
-      - '**.php'
 
 # Read-only: this used to run Pint in fix mode on main and push the result back with
 # git-auto-commit-action. That is incompatible with the required status checks now protecting

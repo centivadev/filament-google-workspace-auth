@@ -1,20 +1,13 @@
 name: Tests
 
+# No paths filter: these jobs are required status checks on main, and a filtered workflow
+# simply never reports on a PR that does not touch the filtered paths, leaving the check
+# permanently pending and the PR unmergeable. Running them on every PR is the cheap fix.
 on:
   push:
     branches:
       - main
-    paths:
-      - '**.php'
-      - '.github/workflows/run-tests.yml'
-      - 'composer.json'
-      - 'phpunit.xml.dist'
   pull_request:
-    paths:
-      - '**.php'
-      - '.github/workflows/run-tests.yml'
-      - 'composer.json'
-      - 'phpunit.xml.dist'
 
 # The test toolchain pins this matrix, not the package: pest ^5 needs PHP ^8.4 and
 # pest-plugin-laravel ^5 needs Laravel ^13.23. The declared lower bounds (php ^8.2,
