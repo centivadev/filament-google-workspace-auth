@@ -113,6 +113,7 @@ class FilamentUserResource extends Resource
                 EditAction::make(),
                 Action::make('ban')
                     ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.actions.ban'))
+                    ->authorize('update')
                     ->requiresConfirmation()
                     ->visible(fn ($record) => empty($record->banned_at))
                     ->action(function ($record) {
@@ -122,6 +123,7 @@ class FilamentUserResource extends Resource
                     }),
                 Action::make('unban')
                     ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.actions.unban'))
+                    ->authorize('update')
                     ->requiresConfirmation()
                     ->visible(fn ($record) => ! empty($record->banned_at))
                     ->action(function ($record) {

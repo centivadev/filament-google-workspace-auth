@@ -2,6 +2,16 @@
 
 All notable changes to `filament-google-workspace-auth` will be documented in this file.
 
+## 1.1.1 - 2026-08-27
+
+Upgrading is drop-in: no configuration changes are required and no public API was removed. The one
+behaviour change is that the `ban` and `unban` row actions on the Filament users list now require
+`filament.users.update` — previously they ran for anyone who could merely view the list.
+
+### Security
+
+- Require `filament.users.update` before the `ban` and `unban` row actions on the Filament users resource run. Unlike `EditAction`, a plain `Action::make()` does not auto-resolve a policy — with no `->authorize()` call its default authorization is "allowed", so any user holding only `filament.users.view_any` could ban or unban any account, including other admins, without ever holding `filament.users.update`.
+
 ## 1.1.0 - 2026-08-14
 
 Upgrading is drop-in: no configuration changes are required and no public API was removed. The
