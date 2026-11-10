@@ -3,6 +3,7 @@
 namespace CentivaDev\FilamentGoogleWorkspaceAuth\Http\Controllers;
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Services\GoogleOidcService;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountStatus;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -162,25 +163,13 @@ class GoogleAuthController
         return redirect()->intended(Filament::getUrl());
     }
 
-    /**
-     * Prefers the HasFilamentGoogleWorkspaceUser helpers so a model may override them, and falls
-     * back to the same rule read straight off the attributes for models predating the trait.
-     */
     private function denyUnlessAllowedToSignIn(Model $user): void
     {
-        $banned = method_exists($user, 'isBanned')
-            ? $user->isBanned()
-            : ! empty($user->getAttribute('banned_at'));
-
-        if ($banned) {
+        if (AccountStatus::isBanned($user)) {
             abort(403, 'User is banned.');
         }
 
-        $active = method_exists($user, 'isActive')
-            ? $user->isActive()
-            : ! array_key_exists('is_active', $user->getAttributes()) || (bool) $user->getAttribute('is_active');
-
-        if (! $active) {
+        if (! AccountStatus::isActive($user)) {
             abort(403, 'User is not active.');
         }
     }
