@@ -2,6 +2,14 @@
 
 All notable changes to `filament-google-workspace-auth` will be documented in this file.
 
+## 1.2.1 - 2026-11-10
+
+Upgrading is drop-in: no configuration changes are required and no public API was removed.
+
+### Changed
+
+- The users edit form is split into three sections: `Identity` (name, email, avatar URL) and `Account` (`banned_at`, Google subject, last login) side by side, then a full width `Roles and permissions` section with roles and direct permissions side by side and the permissions inherited through roles below. New translation keys `filament.users.sections.account` and `filament.users.helpers.direct_permissions`, and the `filament.users.sections.access` label becomes `Roles and permissions`.
+
 ## 1.2.0 - 2026-11-10
 
 No configuration changes are required and no public API was removed, but several behaviours change

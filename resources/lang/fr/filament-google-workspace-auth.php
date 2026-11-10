@@ -13,7 +13,8 @@ return [
         'users' => [
             'sections' => [
                 'identity' => 'Identite',
-                'access' => 'Acces',
+                'account' => 'Compte',
+                'access' => 'Roles et permissions',
             ],
             'fields' => [
                 'name' => 'Nom',
@@ -33,6 +34,7 @@ return [
             'helpers' => [
                 'self' => 'Vous ne pouvez pas retirer votre propre role super-admin, ni vous desactiver ou vous bannir.',
                 'last_super_admin' => 'C\'est le dernier super-admin actif : il doit garder ce role et ne peut etre ni desactive ni banni.',
+                'direct_permissions' => 'Accordees en plus de celles des roles.',
             ],
             'actions' => [
                 'ban' => 'Bannir',
