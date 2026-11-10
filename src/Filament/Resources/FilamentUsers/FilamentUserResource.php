@@ -56,15 +56,29 @@ class FilamentUserResource extends Resource
                             ->email()
                             ->required()
                             ->maxLength(255),
+                        TextInput::make('avatar_url')
+                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.avatar_url'))
+                            ->disabled()
+                            ->columnSpanFull(),
+                    ]),
+                Section::make(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.account'))
+                    ->schema([
+                        DateTimePicker::make('banned_at')
+                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.banned_at'))
+                            ->seconds(false)
+                            ->disabled(fn (?Model $record) => static::deactivationLockReason($record) !== null)
+                            ->helperText(fn (?Model $record) => static::deactivationLockReason($record)),
                         TextInput::make('google_sub')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.google_sub'))
                             ->disabled(),
-                        TextInput::make('avatar_url')
-                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.avatar_url'))
+                        DateTimePicker::make('last_login_at')
+                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.last_login_at'))
+                            ->seconds(false)
                             ->disabled(),
                     ]),
                 Section::make(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.access'))
                     ->columns(2)
+                    ->columnSpanFull()
                     ->schema([
                         Select::make('roles')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.roles'))
@@ -80,21 +94,14 @@ class FilamentUserResource extends Resource
                             ->preload()
                             ->searchable()
                             ->optionsLimit(5)
-                            ->relationship('permissions', 'name', fn (Builder $query) => $query->where('guard_name', static::guardName())),
+                            ->relationship('permissions', 'name', fn (Builder $query) => $query->where('guard_name', static::guardName()))
+                            ->helperText(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.helpers.direct_permissions')),
                         TextEntry::make('permissions_via_roles')
                             ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.permissions_via_roles'))
                             ->state(fn (?Model $record) => static::permissionsViaRoles($record))
                             ->badge()
-                            ->placeholder(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.empty.permissions_via_roles')),
-                        DateTimePicker::make('banned_at')
-                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.banned_at'))
-                            ->seconds(false)
-                            ->disabled(fn (?Model $record) => static::deactivationLockReason($record) !== null)
-                            ->helperText(fn (?Model $record) => static::deactivationLockReason($record)),
-                        DateTimePicker::make('last_login_at')
-                            ->label(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.fields.last_login_at'))
-                            ->seconds(false)
-                            ->disabled(),
+                            ->placeholder(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.empty.permissions_via_roles'))
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

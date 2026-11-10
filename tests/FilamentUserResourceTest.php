@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
 use Filament\Support\Exceptions\Cancel;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -309,4 +310,32 @@ it('re-checks banned_at under lock when the field became disabled after dehydrat
         ->assertHasFormErrors(['banned_at']);
 
     expect($target->refresh()->banned_at)->toBeNull();
+});
+
+it('lays out the edit form in identity, account and full width access sections', function () {
+    $actor = grantUserManagement(createSuperAdmin());
+    $this->actingAs($actor, 'filament');
+
+    $page = editUser(createFilamentUser());
+    $sections = $page->instance()->getSchema('form')?->getComponents() ?? [];
+    $headings = array_map(fn ($section) => $section instanceof Section ? $section->getHeading() : null, $sections);
+
+    expect($headings)->toBe([
+        __('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.identity'),
+        __('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.account'),
+        __('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.access'),
+    ]);
+    expect($sections[2]->getColumnSpan('default'))->toBe('full');
+    expect(formComponent($page, 'permissions_via_roles', TextEntry::class)->getColumnSpan('default'))->toBe('full');
+});
+
+it('renders the edit page', function () {
+    Config::set('app.env', 'local');
+    $actor = grantUserManagement(createSuperAdmin());
+    $this->actingAs($actor, 'filament');
+
+    $this->get(FilamentUserResource::getUrl('edit', ['record' => createFilamentUser()]))
+        ->assertOk()
+        ->assertSee(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.sections.account'))
+        ->assertSee(__('filament-google-workspace-auth::filament-google-workspace-auth.filament.users.helpers.direct_permissions'));
 });

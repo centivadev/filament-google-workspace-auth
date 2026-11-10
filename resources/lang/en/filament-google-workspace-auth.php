@@ -13,7 +13,8 @@ return [
         'users' => [
             'sections' => [
                 'identity' => 'Identity',
-                'access' => 'Access',
+                'account' => 'Account',
+                'access' => 'Roles and permissions',
             ],
             'fields' => [
                 'name' => 'Name',
@@ -33,6 +34,7 @@ return [
             'helpers' => [
                 'self' => 'You cannot remove your own super-admin role, deactivate or ban yourself.',
                 'last_super_admin' => 'This is the last active super-admin: it must keep the role and cannot be deactivated or banned.',
+                'direct_permissions' => 'Granted in addition to those of the roles.',
             ],
             'actions' => [
                 'ban' => 'Ban',
