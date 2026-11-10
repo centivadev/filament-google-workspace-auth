@@ -7,6 +7,7 @@ use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\FilamentUsers\Fila
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Permissions\PermissionResource;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Roles\RoleResource;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\CheckGoogleSessionLifetime;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\EnsureAccountIsAllowed;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -21,6 +22,7 @@ class FilamentGoogleWorkspaceAuthPlugin implements Plugin
     {
         $panel->login(GoogleLogin::class);
         $panel->authMiddleware([CheckGoogleSessionLifetime::class]);
+        $panel->authMiddleware([EnsureAccountIsAllowed::class], isPersistent: true);
 
         $resources = [];
         $resourceConfig = config('filament-google-workspace-auth.resources', []);

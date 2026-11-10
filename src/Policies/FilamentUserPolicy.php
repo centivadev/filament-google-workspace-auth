@@ -3,7 +3,9 @@
 namespace CentivaDev\FilamentGoogleWorkspaceAuth\Policies;
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\Concerns\ChecksPermissions;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountProtection;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
 class FilamentUserPolicy
 {
@@ -31,6 +33,7 @@ class FilamentUserPolicy
 
     public function delete(Authenticatable $user, mixed $model): bool
     {
-        return $this->userCan($user, 'filament.users.delete');
+        return $this->userCan($user, 'filament.users.delete')
+            && ! ($model instanceof Model && app(AccountProtection::class)->isLastActiveSuperAdmin($model));
     }
 }

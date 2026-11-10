@@ -2,6 +2,39 @@
 
 All notable changes to `filament-google-workspace-auth` will be documented in this file.
 
+## 1.2.0 - 2026-11-10
+
+No configuration changes are required and no public API was removed, but several behaviours change
+and are worth reading before upgrading:
+
+- A signed-in account that is banned or deactivated is now logged out on its next request,
+  Livewire requests included. Previously the status was only checked at the Google callback, so a
+  deactivated user kept access until the session ended. Accounts that are already inactive today
+  lose their open sessions on upgrade.
+- On the Filament users resource, nobody can remove their own `super-admin` role, deactivate or ban
+  themselves, and the last active, non-banned super-admin can no longer lose the role, be
+  deactivated, banned or deleted, by anyone. `FilamentUserPolicy::delete()` now denies that account.
+- The roles and permissions selects on the users resource only list records of the configured
+  `guard`. Links to records of other guards are kept on save.
+- The edit page of the users resource now runs in a database transaction.
+
+### Security
+
+- Add the persistent `EnsureAccountIsAllowed` panel middleware, registered by the plugin with `authMiddleware(..., isPersistent: true)` so that it also runs on `livewire/update`. It applies the same rules as sign-in (`isBanned()` / `isActive()` when the model uses `HasFilamentGoogleWorkspaceUser`, the `banned_at` / `is_active` attributes otherwise, no `is_active` column meaning active), then logs out, invalidates the session and redirects to the login page.
+- Add `AccountProtection`, a public API enforcing the account protection rules server-side, for projects with their own users screen. Its `ensure*` methods lock the `super-admin` role row, its pivot rows and its holders (`SELECT ... FOR UPDATE`) so that two super-admins demoting each other at the same time are serialized. They must run inside a transaction on the user model connection.
+- Enforce those rules in `EditFilamentUser` (`beforeSave`) and in the `ban` row action, not only through the UI.
+
+### Fixed
+
+- The `ban` and `unban` row actions no longer write `is_active` when the table has no such column. They used to fail with an SQL error, leaving the account unbanned.
+
+### Changed
+
+- The users form shows direct permissions and permissions inherited through roles separately.
+- The `banned_at` field and the `ban` action are disabled, with an explanation, on your own account and on the last active super-admin.
+- Clear the spatie permission cache after saving a user.
+- New `AccountStatus` helper shared by the Google callback, the new middleware and `AccountProtection`.
+
 ## 1.1.1 - 2026-08-27
 
 Upgrading is drop-in: no configuration changes are required and no public API was removed. The one

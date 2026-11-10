@@ -5,6 +5,7 @@ namespace CentivaDev\FilamentGoogleWorkspaceAuth;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\FilamentUserPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\PermissionPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\RolePolicy;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountProtection;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
@@ -40,7 +41,7 @@ class FilamentGoogleWorkspaceAuthServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        //
+        $this->app->scoped(AccountProtection::class);
     }
 
     public function packageBooted(): void

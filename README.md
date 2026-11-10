@@ -13,6 +13,8 @@ Google Workspace (OIDC) authentication for Filament v4/v5 using a dedicated `Fil
 - Separate guard and model to avoid conflicts with a future `User` model
 - Session validity management: absolute timeout + near-real-time Google account revocation detection
 - Ban and deactivation gates enforced before the account record is touched
+- Banned or deactivated accounts logged out on their next request, Livewire requests included
+- Account protection (own super-admin role, self-ban, last super-admin) with a reusable API
 - Rate-limited auth routes
 
 ## Requirements
@@ -174,8 +176,18 @@ For an existing account, sign-in is refused — before the record is written —
 set or an `is_active` column is falsy. This resolves through `isBanned()` / `isActive()` when the
 model uses `HasFilamentGoogleWorkspaceUser`, and off the attributes otherwise.
 
-So banning or deactivating takes effect on the next login attempt, signing in never re-activates a
-deactivated account, and a refused attempt leaves `last_login_at` and the profile fields untouched.
+Signing in never re-activates a deactivated account, and a refused attempt leaves `last_login_at`
+and the profile fields untouched.
+
+The same rule is applied on every panel request by the `EnsureAccountIsAllowed` middleware, which
+the plugin registers as persistent so that it also runs on `livewire/update`. Banning or
+deactivating an account therefore logs it out on its next request: the session is invalidated and
+the user is redirected to the login page. The middleware reads the user from the configured `guard`,
+which must be the panel's `authGuard`.
+
+If your model's `canAccessPanel()` also checks `isActive()` / `isBanned()`, Filament's
+`Authenticate` middleware runs first and answers 403 instead, without logging the user out. Remove
+that check to get the logout and redirect.
 
 Newly provisioned accounts have no prior status to check; `is_active` takes your column default.
 
@@ -192,6 +204,77 @@ They are grouped under the navigation group configured in `resources.navigation_
 Protected roles:
 - `super-admin` and `guest` cannot be deleted
 - The `name` of those roles is not editable
+
+Account protection, enforced server-side on the users resource:
+- nobody can remove their own `super-admin` role (adding roles to yourself is allowed)
+- nobody can deactivate or ban themselves
+- the last active, non-banned `super-admin` cannot lose the role, be deactivated, banned or deleted
+- the roles and permissions selects only list records of the configured `guard`
+- direct permissions and permissions inherited through roles are shown separately
+
+### Account protection in your own users screen
+
+If you disable the package resource (`resources.users = false`) or extend it with your own form,
+call `AccountProtection` from your pages. The `ensure*` methods lock the `super-admin` role and its
+holders, so call them inside a transaction on the user model connection that also performs the
+write. Outside a transaction they throw a `LogicException`. Filament opens its page transaction on
+the default connection: if your user model uses another one, override the page's
+`beginDatabaseTransaction()`, `commitDatabaseTransaction()` and `rollBackDatabaseTransaction()` as
+`EditFilamentUser` does. On a refusal they throw
+`AccountProtectionException`, a `ValidationException` keyed by `roles`, `is_active` or `banned_at`
+(plus an optional prefix), or `record` for deletions.
+
+```php
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountProtection;
+use Illuminate\Support\Arr;
+use Spatie\Permission\PermissionRegistrar;
+
+class EditUser extends EditRecord
+{
+    // Filament transactions are off by default; the lock needs one.
+    protected ?bool $hasDatabaseTransactions = true;
+
+    protected function beforeSave(): void
+    {
+        // Pass every protected field your form has, disabled or not: 'roles' are the ids of the
+        // target's roles in the configured guard after the save.
+        $changes = Arr::only($this->form->getRawState(), ['roles', 'is_active', 'banned_at']);
+
+        app(AccountProtection::class)->ensureCanUpdate(
+            actor: auth('filament')->user() ?? abort(403),
+            target: $this->getRecord(),
+            changes: $changes,
+            errorKeyPrefix: 'data.',
+        );
+    }
+
+    protected function afterSave(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+}
+```
+
+For a delete or ban action, wrap the check and the write in one transaction:
+
+```php
+DeleteAction::make()->using(function (Model $record) {
+    $record->getConnection()->transaction(function () use ($record) {
+        app(AccountProtection::class)->ensureCanDelete($record);
+        $record->delete();
+    });
+});
+```
+
+`ensureCanBan($actor, $target)` covers a ban. For the UI, `canRemoveSuperAdmin()`,
+`canDeactivate()`, `canDelete()` and `isLastActiveSuperAdmin()` answer without locking; use them for
+`disabled()` or `visible()`, never as the only check.
+
+`FilamentUserPolicy::delete()` also denies the last active super-admin, but bulk actions such as
+`DeleteBulkAction` only check `deleteAny`: call `ensureCanDelete()` for each record there.
+
+The lock relies on `SELECT ... FOR UPDATE`, which MySQL, MariaDB and PostgreSQL honour and SQLite
+ignores.
 
 Base permissions:
 - The package ships a migration stub `add_base_permissions.php.stub` that seeds default Filament permissions.
