@@ -1,8 +1,10 @@
 <?php
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\CheckGoogleSessionLifetime;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\MarkerPage;
 use Filament\Facades\Filament;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +12,21 @@ use Illuminate\Support\Facades\Route;
 beforeEach(function () {
     Route::middleware(['web', CheckGoogleSessionLifetime::class])
         ->get('/_test/google-session', fn () => response('ok'));
+});
+
+it('logs out on a livewire/update call once the absolute lifetime is exceeded, without running it', function () {
+    Config::set('app.env', 'local');
+    Config::set('filament-google-workspace-auth.session_lifetime', 60);
+    MarkerPage::$calls = [];
+
+    $snapshot = markerPageSnapshot($this, createSuperAdmin());
+
+    session()->put('filament-google.authenticated_at', time() - (61 * 60));
+
+    callMark($this, $snapshot)->assertRedirect(Filament::getPanel('admin')->getLoginUrl());
+
+    expect(MarkerPage::$calls)->toBe([])
+        ->and(Auth::guard('filament')->check())->toBeFalse();
 });
 
 it('redirects to login when absolute session lifetime is exceeded', function () {

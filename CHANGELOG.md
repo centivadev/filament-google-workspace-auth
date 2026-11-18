@@ -2,6 +2,32 @@
 
 All notable changes to `filament-google-workspace-auth` will be documented in this file.
 
+## 2.0.0 - 2026-11-18
+
+A major release: the new pending access lock is on by default, including for a config file published
+before it existed. After upgrading, an account that holds nothing but `guest` (or the configured
+`default_role`), or no role, only reaches the `pending-access` page, and permissions given to the
+`guest` role no longer apply. Set `FILAMENT_GOOGLE_PENDING_ACCESS=false` to keep the previous
+behaviour. While the lock is enabled, a panel throws a `LogicException` on boot when it uses tenancy,
+when its `authGuard` is not the configured `guard`, or when spatie teams are on. An app that already
+redirects these accounts to its own page must remove that redirect, or both redirects loop. Rebuild
+the Filament component cache (`php artisan filament:optimize`) after upgrading if you cache it: until
+then the new page has no route and locked accounts get a 403. No public API was removed.
+
+### Added
+
+- Pending access lock, on by default (`pending_access.enabled`, `FILAMENT_GOOGLE_PENDING_ACCESS`). An account that holds no role on the configured guard other than `pending_access.roles` (default `guest`), and no direct permission on it, is locked. `default_role` always counts as pending, and an account with no role at all, or a signed-in user that is not an Eloquent model, is locked too. The persistent `EnsureAccessIsGranted` panel middleware sends every panel request of a locked account, `livewire/update` included, to the new `PendingAccess` page (slug `pending-access`). That page only offers logging out and shows `pending_access.support_email` when it is set.
+- While the lock is enabled, a `Gate::before` registered ahead of spatie's denies every ability to a locked instance of the configured `user_model`, so resources without a policy, `can:` middleware and `authorize()` calls are refused even where the app grants them.
+- `pending_access.*` translations (en, fr).
+
+### Security
+
+- `CheckGoogleSessionLifetime` is registered as persistent, so the absolute session lifetime and the Google account check also run on `livewire/update`. Before, an expired session or a suspended Google account kept running Livewire actions until the next full page load.
+
+### Changed
+
+- The sign-in button spans the card through Filament's full-width actions container (`fi-ac fi-width-full`). The `w-full justify-center` utilities it used are not in Filament's compiled theme and had no effect.
+
 ## 1.2.1 - 2026-11-10
 
 Upgrading is drop-in: no configuration changes are required and no public API was removed.

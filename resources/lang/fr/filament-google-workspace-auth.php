@@ -4,6 +4,12 @@ return [
     'login' => [
         'button' => 'Se connecter avec Google',
     ],
+    'pending_access' => [
+        'title' => 'Accès non configuré',
+        'recognized' => 'Votre compte Google a bien été reconnu, mais aucun accès ne lui est encore attribué.',
+        'contact' => 'Contactez l\'équipe technique afin de configurer votre accès',
+        'logout' => 'Se déconnecter',
+    ],
     'navigation' => [
         'groups' => [
             'users' => 'Utilisateurs',

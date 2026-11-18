@@ -110,5 +110,7 @@ class TestCase extends Orchestra
             'store' => 'array',
         ]);
         Config::set('permission.default_guard_name', 'filament');
+
+        $app['view']->addNamespace('tests', __DIR__ . '/views');
     }
 }

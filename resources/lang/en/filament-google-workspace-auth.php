@@ -4,6 +4,12 @@ return [
     'login' => [
         'button' => 'Sign in with Google',
     ],
+    'pending_access' => [
+        'title' => 'Access not configured',
+        'recognized' => 'Your Google account was recognized, but no access has been granted to it yet.',
+        'contact' => 'Contact the technical team to configure your access',
+        'logout' => 'Sign out',
+    ],
     'navigation' => [
         'groups' => [
             'users' => 'Users',
