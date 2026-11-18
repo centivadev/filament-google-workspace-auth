@@ -44,6 +44,12 @@ return [
     // Only effective while the Google access token is valid (first 60 minutes after login).
     'userinfo_check_interval' => env('FILAMENT_GOOGLE_USERINFO_CHECK_INTERVAL', 60),
 
+    'pending_access' => [
+        'enabled' => env('FILAMENT_GOOGLE_PENDING_ACCESS', true),
+        'roles' => ['guest'],
+        'support_email' => env('FILAMENT_GOOGLE_SUPPORT_EMAIL'),
+    ],
+
     // Resource registration (users/roles/permissions) inside Filament.
     'resources' => [
         'users' => true,

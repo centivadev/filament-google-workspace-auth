@@ -40,6 +40,9 @@ class TestPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->pages([
+                MarkerPage::class,
+            ])
             ->plugins([
                 FilamentGoogleWorkspaceAuthPlugin::make(),
             ]);

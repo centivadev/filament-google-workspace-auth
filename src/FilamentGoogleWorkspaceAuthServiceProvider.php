@@ -5,7 +5,9 @@ namespace CentivaDev\FilamentGoogleWorkspaceAuth;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\FilamentUserPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\PermissionPolicy;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Policies\RolePolicy;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccessLock;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountProtection;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
@@ -42,6 +44,10 @@ class FilamentGoogleWorkspaceAuthServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->scoped(AccountProtection::class);
+
+        $this->callAfterResolving(GateContract::class, function (GateContract $gate): void {
+            $gate->before(static fn (mixed $user): ?bool => AccessLock::isLocked($user) ? false : null);
+        });
     }
 
     public function packageBooted(): void

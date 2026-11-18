@@ -2,14 +2,20 @@
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccountProtection;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\FilamentUser;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\Fixtures\MarkerPage;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
+use Livewire\Livewire;
+use Livewire\Mechanisms\HandleRequests\HandleRequests;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\Response;
 
 uses(TestCase::class, RefreshDatabase::class)->in(__DIR__);
 
@@ -70,4 +76,49 @@ function createColumnlessUsersTable(): void
         $table->timestamp('banned_at')->nullable();
         $table->timestamps();
     });
+}
+
+/**
+ * @return TestResponse<Response>
+ */
+function getAs(TestCase $test, FilamentUser $user, string $url): TestResponse
+{
+    Auth::forgetGuards();
+
+    return $test->withSession([Auth::guard('filament')->getName() => $user->getKey()])->get($url);
+}
+
+function markerPageSnapshot(TestCase $test, FilamentUser $user): string
+{
+    $html = (string) getAs($test, $user, MarkerPage::getUrl(panel: 'admin'))->assertOk()->getContent();
+
+    preg_match_all('/wire:snapshot="([^"]+)"/', $html, $matches);
+
+    foreach ($matches[1] as $encoded) {
+        $snapshot = htmlspecialchars_decode($encoded);
+
+        if ((json_decode($snapshot, true)['memo']['name'] ?? null) === MarkerPage::class) {
+            return $snapshot;
+        }
+    }
+
+    throw new RuntimeException('MarkerPage snapshot not found in the rendered page.');
+}
+
+/**
+ * @return TestResponse<Response>
+ */
+function callMark(TestCase $test, string $snapshot): TestResponse
+{
+    Livewire::flushState();
+    Auth::forgetGuards();
+
+    return $test->postJson(app(HandleRequests::class)->getUpdateUri(), [
+        '_token' => session()->token(),
+        'components' => [[
+            'snapshot' => $snapshot,
+            'updates' => (object) [],
+            'calls' => [['method' => 'mark', 'params' => [], 'metadata' => (object) []]],
+        ]],
+    ], ['X-Livewire' => '1']);
 }

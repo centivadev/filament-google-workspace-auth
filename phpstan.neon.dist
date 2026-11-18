@@ -5,9 +5,10 @@ parameters:
 
     level: 6
 
-    # src/ is analysed with no suppressions. These cover two Pest/Mockery idioms in tests/ that
-    # PHPStan cannot model: $this resolves to TestCall inside a Pest closure, and
-    # shouldReceive() is typed as a union that does not declare once().
+    # src/ is analysed with no suppressions. These cover three Pest/Mockery idioms in tests/ that
+    # PHPStan cannot model: $this resolves to TestCall inside a Pest closure,
+    # shouldReceive() is typed as a union that does not declare once(), and traits applied
+    # with Pest's uses() look unused.
     # Unmatched entries are reported as errors, so these cannot rot.
     ignoreErrors:
         -
@@ -18,3 +19,8 @@ parameters:
             identifier: argument.type
             paths:
                 - tests
+        -
+            identifier: trait.unused
+            paths:
+                - tests/Fixtures/EnablesPendingAccess.php
+                - tests/Fixtures/DisablesPendingAccess.php

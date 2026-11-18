@@ -3,13 +3,17 @@
 namespace CentivaDev\FilamentGoogleWorkspaceAuth;
 
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Pages\GoogleLogin;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Pages\PendingAccess;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\FilamentUsers\FilamentUserResource;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Permissions\PermissionResource;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Filament\Resources\Roles\RoleResource;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\CheckGoogleSessionLifetime;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\EnsureAccessIsGranted;
 use CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\EnsureAccountIsAllowed;
+use CentivaDev\FilamentGoogleWorkspaceAuth\Support\AccessLock;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use LogicException;
 
 class FilamentGoogleWorkspaceAuthPlugin implements Plugin
 {
@@ -21,8 +25,13 @@ class FilamentGoogleWorkspaceAuthPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel->login(GoogleLogin::class);
-        $panel->authMiddleware([CheckGoogleSessionLifetime::class]);
+        $panel->authMiddleware([CheckGoogleSessionLifetime::class], isPersistent: true);
         $panel->authMiddleware([EnsureAccountIsAllowed::class], isPersistent: true);
+
+        if (AccessLock::isEnabled()) {
+            $panel->pages([PendingAccess::class]);
+            $panel->authMiddleware([EnsureAccessIsGranted::class], isPersistent: true);
+        }
 
         $resources = [];
         $resourceConfig = config('filament-google-workspace-auth.resources', []);
@@ -46,7 +55,23 @@ class FilamentGoogleWorkspaceAuthPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        //
+        if (! AccessLock::isEnabled()) {
+            return;
+        }
+
+        if ($panel->hasTenancy()) {
+            throw new LogicException("The pending access lock does not support tenancy, on panel [{$panel->getId()}].");
+        }
+
+        $guard = (string) config('filament-google-workspace-auth.guard', 'filament');
+
+        if ($panel->getAuthGuard() !== $guard) {
+            throw new LogicException("The pending access lock needs the panel [{$panel->getId()}] to use the [{$guard}] guard.");
+        }
+
+        if (config('permission.teams')) {
+            throw new LogicException('The pending access lock does not support spatie teams.');
+        }
     }
 
     public static function make(): static

@@ -143,6 +143,7 @@ Key options:
 - `allowed_emails` to restrict to specific emails
 - `super_admin_emails` to auto-assign `super-admin`
 - `default_role` to auto-assign `guest`
+- `pending_access` to lock accounts that hold nothing but the `guest` role, on by default (see [Pending access](#pending-access))
 - `guard` to match your Filament guard (default: `filament`)
 - `routes.prefix` to align with your Filament path (example: `auth/google` for a root‑domain panel)
 - `routes.throttle` abuse ceiling on the redirect/callback routes, as `"attempts,minutes"` (default: `120,1`, `null` to disable). Laravel keys this by IP and a whole Workspace office usually shares one NAT address, so keep it generous — the brute-force defence is PKCE/state/nonce, not this.
@@ -190,6 +191,56 @@ If your model's `canAccessPanel()` also checks `isActive()` / `isBanned()`, Fila
 that check to get the logout and redirect.
 
 Newly provisioned accounts have no prior status to check; `is_active` takes your column default.
+
+### Pending access
+
+On by default. Disable it with `pending_access.enabled` (`FILAMENT_GOOGLE_PENDING_ACCESS=false`).
+A config file published before this option existed gets it enabled too, because the package merges
+its own `pending_access` key into it.
+
+An account is locked while it holds no role on the configured `guard` other than those listed in
+`pending_access.roles` (default `['guest']`), and no direct permission on that guard. An account with
+no role at all is locked too, and so is a signed-in user that is not an Eloquent model or whose model
+lacks the spatie relations. The `default_role` given to new accounts always counts as pending, whatever
+`pending_access.roles` lists. Granting a role or a direct permission unlocks an account on its next
+request, and removing them locks it again.
+
+A locked account:
+
+- is redirected from every panel page, and from every `livewire/update` request, to the
+  `pending-access` page by the persistent `EnsureAccessIsGranted` middleware, which checks whoever is
+  signed in on the configured `guard`. That page only offers logging out, and shows
+  `pending_access.support_email` as the contact address when it is set.
+- when it is an instance of the configured `user_model`, is denied every ability by a
+  `Gate::before` registered ahead of spatie's and of those your app registers, so resources without
+  a policy, `can:` middleware, `authorize()` and `@can` are refused even when your app or a
+  permission on the `guest` role would allow them.
+
+Requirements and limits:
+
+- Panel tenancy is not supported: the plugin throws a `LogicException` when a panel with tenancy
+  boots while the lock is enabled. Disable the lock on such an app.
+- The panel's `authGuard` must be the configured `guard`, otherwise the plugin throws a
+  `LogicException` when the panel boots while the lock is enabled.
+- Your model's `canAccessPanel()` must let locked accounts in, otherwise Filament answers 403 before
+  the pending page.
+- The Gate deny applies to every instance of the configured model, on any guard. Disable the lock if
+  that model is shared with users who never sign in to the panel. Only the roles and permissions of
+  the configured `guard` count: an account locked there is denied on every other guard too, whatever
+  it holds on them.
+- Spatie teams are not supported: the plugin throws a `LogicException` when a panel boots while
+  `permission.teams` and the lock are both enabled.
+- If you cache Filament components, rebuild the cache after enabling the lock
+  (`php artisan filament:optimize`, which `php artisan optimize` also runs). Until then the pending
+  page has no route and locked accounts get a 403.
+- Routes of your app outside the panel are not covered unless they ask the Gate. Add
+  `\CentivaDev\FilamentGoogleWorkspaceAuth\Http\Middleware\EnsureAccessIsGranted` after their auth
+  middleware to send locked accounts to the default panel's pending page. That panel must use the
+  plugin, otherwise locked accounts get a 403.
+- Direct spatie calls (`hasRole()`, `hasPermissionTo()`, `@role`) do not go through the Gate, and
+  exports created before the lock stay downloadable by their owner.
+
+The page texts are the `pending_access.*` keys of the package translations.
 
 ## Admin UI
 
@@ -300,7 +351,9 @@ FILAMENT_GOOGLE_REMEMBER=false
 
 ### Absolute session lifetime
 
-Forces the user to re-authenticate with Google after a fixed delay, regardless of activity.
+Forces the user to re-authenticate with Google after a fixed delay, regardless of activity. The check
+runs on every panel request, `livewire/update` included, so an expired session cannot run a Livewire
+action.
 
 ```dotenv
 FILAMENT_GOOGLE_SESSION_LIFETIME=480   # 8 hours, null to disable
